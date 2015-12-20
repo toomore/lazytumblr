@@ -36,3 +36,17 @@ func TestTumblr_Post(*testing.T) {
 	//args["data64"] = readFileToBase64("/Volumes/RamDisk/45070001_1.jpg")
 	//log.Printf("%+v", t.Post(args, nil))
 }
+
+func TestTumblr_PostPhoto(*testing.T) {
+	t := getTumblr()
+	t.BaseHost = os.Getenv("TUMBLRUSERBASEHOST")
+	t.Token = os.Getenv("TUMBLRUSERTOKEN")
+	t.TokenSecret = os.Getenv("TUMBLRUSERSECRET")
+
+	args := make(map[string]string)
+	args["caption"] = "<b>Toomore</b> You are the great!!"
+	args["source_url"] = "https://www.flickr.com/photos/toomore/23666343391"
+
+	files := []string{"/Volumes/RamDisk/45070001_1.jpg", "/Volumes/RamDisk/45070002_1.jpg"}
+	t.PostPhoto(args, files)
+}

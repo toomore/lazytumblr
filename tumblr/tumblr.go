@@ -70,8 +70,28 @@ func (t Tumblr) HTTPPost(path string, data map[string]string, files url.Values) 
 // Post method
 func (t Tumblr) Post(args map[string]string, files url.Values) *http.Response {
 	args["state"] = "queue"
-	args["tags"] = "api,test"
 	return t.HTTPPost(fmt.Sprintf(APIURLBLOG, t.BaseHost)+"/post", args, files)
+}
+
+// PostPhoto for post type `photo`
+//
+// ref: https://www.tumblr.com/docs/en/api/v2#pphoto-posts
+func (t Tumblr) PostPhoto(args map[string]string, paths []string) *http.Response {
+	args["type"] = "photo"
+	if args["source"] != "" {
+		return t.Post(args, nil)
+	}
+
+	if len(paths) == 1 {
+		args["base64"] = readFileToBase64(paths[0])
+		return t.Post(args, nil)
+	}
+
+	files := url.Values{}
+	for _, path := range paths {
+		files.Add("data", readFilesBin(path).String())
+	}
+	return t.Post(args, files)
 }
 
 // Sign sign all data.
