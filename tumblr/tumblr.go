@@ -1,13 +1,16 @@
 package tumblr
 
 import (
+	"bytes"
 	"crypto/hmac"
 	"crypto/sha1"
 	"encoding/base64"
 	"fmt"
+	"io/ioutil"
 	"log"
 	"net/http"
 	"net/url"
+	"os"
 	"strings"
 	"time"
 )
@@ -39,7 +42,7 @@ func NewTumblr(consumerKey string, consumerSecret string) *Tumblr {
 }
 
 // HTTPPost post.
-func (t Tumblr) HTTPPost(path string, data map[string]string) *http.Response {
+func (t Tumblr) HTTPPost(path string, data map[string]string, files url.Values) *http.Response {
 	log.Println("API Path:", path)
 
 	query := url.Values{}
@@ -51,22 +54,11 @@ func (t Tumblr) HTTPPost(path string, data map[string]string) *http.Response {
 		query.Set(key, val)
 	}
 
+	for i, val := range files["data"] {
+		query.Add(fmt.Sprintf("data[%d]", i), val)
+	}
+
 	resp, err := http.PostForm(path, t.Sign("POST", path, query))
-
-	//req, err := http.NewRequest("POST", path,
-	//	strings.NewReader(t.Sign("POST", path, query)))
-	//if err != nil {
-	//	log.Fatal(err)
-	//}
-	//req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
-	////req.Header.Set("Authorization", "Bearea")
-	////req.Header.Add("Authorization", t.args["api_kei"])
-
-	//client := &http.Client{}
-
-	////resp, err := http.PostForm(path, query)
-	//log.Printf("%+v", req)
-	//resp, err := client.Do(req)
 
 	if err != nil {
 		log.Fatal(err)
@@ -76,11 +68,10 @@ func (t Tumblr) HTTPPost(path string, data map[string]string) *http.Response {
 }
 
 // Post method
-func (t Tumblr) Post(args map[string]string) *http.Response {
-	args["type"] = "text"
+func (t Tumblr) Post(args map[string]string, files url.Values) *http.Response {
 	args["state"] = "queue"
 	args["tags"] = "api,test"
-	return t.HTTPPost(fmt.Sprintf(APIURLBLOG, t.BaseHost)+"/post", args)
+	return t.HTTPPost(fmt.Sprintf(APIURLBLOG, t.BaseHost)+"/post", args, files)
 }
 
 // Sign sign all data.
@@ -108,4 +99,44 @@ func (t Tumblr) Sign(method, path string, args url.Values) url.Values {
 // Base64Encode encodes a value using base64.
 func Base64Encode(value []byte) string {
 	return base64.StdEncoding.WithPadding(base64.StdPadding).EncodeToString(value)
+}
+
+func readFilesBin(path string) *bytes.Buffer {
+	body := new(bytes.Buffer)
+
+	file, err := os.Open(path)
+	defer file.Close()
+
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	filsdata, err := ioutil.ReadAll(file)
+
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	body.Write(filsdata)
+
+	return body
+
+}
+
+func readFileToBase64(path string) string {
+	file, err := os.Open(path)
+	defer file.Close()
+
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	filsdata, err := ioutil.ReadAll(file)
+
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	return base64.StdEncoding.EncodeToString(filsdata)
+
 }
